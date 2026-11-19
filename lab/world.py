@@ -4,8 +4,8 @@ from math import hypot
 
 T = 2
 BUDGET = 5
-FAMILIES = ("Drift",)
-DIRECTIONS = ((1, 0),)
+FAMILIES = ("Drift", "Load", "Boundary")
+DIRECTIONS = ((1, 0), (0, 1), (0.8, -0.6))
 STRENGTHS = (6, 8, 10, 12)
 PROBES = ("A", "B", "C")
 
@@ -42,8 +42,35 @@ def intervention(scene, action):
     _, attr, value = ACTIONS[action]
     return (replace(scene[0], **{attr:value}), *scene[1:])
 
+# Each row is a decision tree: primary switch, two branch switches,
+# four leaf switches. The law fixes one path; sensors never read the hidden bits.
+TREES = ((0,1,2,3,4,5,6), (1,4,5,0,6,3,2), (3,0,6,2,5,1,4))
+TRIGGERS = ("negative charge", "mass ≥ 1.5", "east speed ≥ 10", "x ≥ 155",
+            "y ≤ 35", "mass ≤ 0.8", "south speed ≥ 9")
+BASE_NAMES = (("Uniform wind","Charge field"), ("Uniform gravity","Load-sensitive lift"),
+              ("Uniform diagonal field","Boundary reversal"))
+
+def branches(w):
+    r, b, c = w.mechanism >> 2, (w.mechanism >> 1) & 1, w.mechanism & 1
+    tree = TREES[w.family]
+    return r,b,c,tree[0],tree[1+r],tree[3+2*r+b]
+
+def law(w):
+    r,b,c,primary,second,leaf=branches(w)
+    name=BASE_NAMES[w.family][r]
+    if b: name += " / " + TRIGGERS[second]
+    if c: name += " / " + TRIGGERS[leaf]
+    clauses=[f"Baseline acceleration: {w.strength} units/s² along the opening track."]
+    if r: clauses.append(f"Subtract 2× baseline for {TRIGGERS[primary]}.")
+    if b: clauses.append(f"Subtract 0.6× baseline for {TRIGGERS[second]}.")
+    if c: clauses.append(f"Subtract 0.8× baseline for {TRIGGERS[leaf]}.")
+    if not (r or b or c): clauses.append("No starting condition changes that field.")
+    return dict(name=name, explanation=" ".join(clauses))
+
 def acceleration(w, p):
-    factor = -1 if w.mechanism and p.q < 0 else 1
+    flags=(p.q<0, p.mass>=1.5, p.vx>=10, p.x>=155, p.y<=35, p.mass<=0.8, p.vy>=9)
+    r,b,c,g,h,j=branches(w)
+    factor = 1 - 2*r*flags[g] - 0.6*b*flags[h] - 0.8*c*flags[j]
     return tuple(w.strength * d * factor for d in DIRECTIONS[w.family])
 
 def position(w, p, t=T):
