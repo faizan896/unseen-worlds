@@ -161,6 +161,8 @@ footer .textbtn {font-size:12px}
   .journalrow {grid-template-columns:20px 1fr 1fr auto;font-size:12px}
   .wrap {flex-wrap:wrap}
   .grid2 {gap:12px}
+  .chart text {font-size:17px}
+  .benchgrid th,.benchgrid td {padding:8px 3px;font-size:12px}
 }
 @media(max-width:390px) {
   .bar {height:auto;flex-wrap:wrap;gap:0;padding-top:8px}
