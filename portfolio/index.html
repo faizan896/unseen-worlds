@@ -24,10 +24,14 @@
 import {compare} from '@@COMPARISON@@';
 const {primary,worlds}=JSON.parse(document.getElementById('recordings').textContent);
 const q=new URLSearchParams(location.search);
-const id=Object.hasOwn(worlds,q.get('world'))?q.get('world'):primary;
+// Old shared links still open their exact replay. Keep new navigation in this tab's history entry.
+const hasReplayQuery=['world','step','replay'].some(key=>q.has(key));
+const saved=hasReplayQuery?null:history.state;
+const world=q.get('world')??saved?.world;
+const id=Object.hasOwn(worlds,world)?world:primary;
 const {base,episodes,witness}=worlds[id];
 const total=episodes.fixed.steps.length;
-const requested=Math.trunc(Number(q.get('step')??1));
+const requested=Math.trunc(Number(q.get('step')??saved?.step??1));
 function show(step,watch){
   const focused=document.activeElement.id;
   compare(base,episodes,step,watch,witness,show);
@@ -37,10 +41,10 @@ function show(step,watch){
   }
   if(/^https?:$/.test(location.protocol)){
     const url=new URL(location.href);
-    url.searchParams.set('world',id);url.searchParams.set('replay','compare');url.searchParams.set('step',step);
-    history.replaceState(null,'',url);
+    for(const key of ['world','step','replay'])url.searchParams.delete(key);
+    history.replaceState({world:id,step,watch},'',url);
   }
 }
-show(Number.isFinite(requested)?Math.min(total,Math.max(0,requested)):1,'learned');
+show(Number.isFinite(requested)?Math.min(total,Math.max(0,requested)):1,saved?.watch==='fixed'?'fixed':'learned');
 </script>
 </body></html>
