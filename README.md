@@ -16,6 +16,8 @@ For a session preview behind an authenticated proxy, use `python server.py --hos
 
 **Benchmark** selects held-out or transfer worlds and reports all six budgets by family. Its casebook opens the strongest win and loss relative to random seed 0; toggle the strategy at the same budget. “Copy replay link” preserves the world, policy and step on the host where the lab runs. A new world draws from either evaluation split. Use the field guide for coordinates and controls.
 
+At test three, the benchmark also plots a single diamond for the best **training-selected fixed triple**. The comparison table reports endpoint error and rule identification separately. “Replay fixed vs. adaptive” shows the two policies on the same world and an observed fork in the learned policy. To start with a case where both try increasing mass first, append `/?world=b960e56a29&replay=compare&step=1` to your lab URL.
+
 ## Reproduce on CPU
 
 ```sh
@@ -35,7 +37,8 @@ Run from the repo root. On Windows, activate with `.venv\Scripts\activate`. Trai
 | [Checkpoint](data/chooser.json) | Real weights, biases, architecture, training seed and loss. Rows of each weight array correspond to output neurons. |
 | [Training script](scripts/train.py) | Generates examples, trains an 18 → 24 tanh → 8 MLP with Adam for 90 epochs. |
 | [Benchmark](results/benchmark.json) | Means for every strategy, budget, split and family plus selected case IDs. |
-| [Episode archive](results/episodes.json.gz) | Learned and seed-0 random actions, measured endpoints, ruled-out names, predictor outputs and errors for every evaluated world. |
+| [Triple search audit](results/triple-search.json) | All 56 fixed-triple scores per family, separately for training selection and retrospective selection on each evaluation split. |
+| [Episode archive](results/episodes.json.gz) | Learned, seed-0 random, and frozen-triple actions, endpoints, eliminated and surviving rules, shared-predictor forecasts and errors for every evaluated world. |
 
 ## What the instruments measure
 
