@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fixed vs. adaptive · Unseen Worlds</title>
+<meta name="description" content="Does choosing the next experiment after seeing the last result beat planning ahead? Watch a 656-parameter chooser and a fixed plan on the same world.">
+<link rel="icon" href="@@MARK@@"><style>@@STYLE@@</style>
+</head>
+<body>
+<a href="#app" class="skip">Skip to replay</a>
+<header><div class="bar"><a class="brand" href="#app"><img src="@@MARK@@" alt="">Unseen Worlds</a><nav aria-label="Research demo"><a href="#study">Study results ↓</a></nav></div></header>
+<main><div id="app" tabindex="-1"><p role="status">Loading the recorded experiment…</p></div>
+<noscript>This interactive replay requires JavaScript. The study results below do not.</noscript>
+<section class="block card" id="study" aria-labelledby="research-title">
+<div class="kicker">Study results / Three-test budget</div><h2 id="research-title">Does feedback change which test is worth doing?</h2>
+<p>Each strategy used the same four forecast tasks and the same predictor. Only the choice of tests changed. These results cover both evaluation splits, not just the world in the replay.</p>
+<table><thead><tr><th>Strategy</th><th>Worlds with one rule</th><th>Mean endpoint error</th></tr></thead><tbody>@@ROWS@@</tbody></table>
+<p>The fixed plan was selected from all 56 triples per family on training worlds alone. The 656-parameter chooser matched its hand-coded information-gain teacher. This is experiment design within a known, noiseless catalog—not discovery of new laws.</p>
+<p><a href="https://github.com/faizan896/unseen-worlds/blob/main/FINDINGS.md">Read the study and split-by-split results ↗</a></p>
+</section></main>
+<footer><span>Unseen Worlds / Research demo</span><a href="https://github.com/faizan896/unseen-worlds">Source and full lab ↗</a></footer>
+<script type="application/json" id="recordings">@@RECORDINGS@@</script>
+<script type="module">
+import {compare} from '@@COMPARISON@@';
+const {primary,worlds}=JSON.parse(document.getElementById('recordings').textContent);
+const q=new URLSearchParams(location.search);
+// Old shared links still open their exact replay. Keep new navigation in this tab's history entry.
+const hasReplayQuery=['world','step','replay'].some(key=>q.has(key));
+const saved=hasReplayQuery?null:history.state;
+const world=q.get('world')??saved?.world;
+const id=Object.hasOwn(worlds,world)?world:primary;
+const {base,episodes,witness}=worlds[id];
+const total=episodes.fixed.steps.length;
+const requested=Math.trunc(Number(q.get('step')??saved?.step??1));
+function show(step,watch){
+  const focused=document.activeElement.id;
+  compare(base,episodes,step,watch,witness,show);
+  if(focused){
+    const target=document.getElementById(focused);
+    (target?.disabled?document.querySelector('#prev:not(:disabled),#next:not(:disabled)'):target)?.focus({preventScroll:true});
+  }
+  if(/^https?:$/.test(location.protocol)){
+    const url=new URL(location.href);
+    for(const key of ['world','step','replay'])url.searchParams.delete(key);
+    history.replaceState({world:id,step,watch},'',url);
+  }
+}
+show(Number.isFinite(requested)?Math.min(total,Math.max(0,requested)):1,saved?.watch==='fixed'?'fixed':'learned');
+</script>
+</body></html>

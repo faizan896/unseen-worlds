@@ -2,6 +2,10 @@
 
 **Can a small model figure out the rules of an unfamiliar world by choosing its own experiments?** In this noiseless, closed catalog, a 656-parameter intervention chooser plus an exact predictor solved all 288 held-out worlds by test three. The network chooses experiments; it does **not** invent equations or predict trajectories unaided. See [the study report](FINDINGS.md) for the curves, family counts and a counterexample where random wins.
 
+**[Watch the paired replay — no login](https://unseen-worlds.vercel.app/).** Both policies start by increasing mass. Select **Next test** to see what each does with the same observation. The demo includes the matched world and study results; run the full lab below to try your own interventions.
+
+To reproduce the public demo, run `python -m scripts.export_demo index.html` from the repository root. Open that file directly or serve it on a static host. It embeds the archived decisions, simulator-generated films, fonts and replay controls; no API or build dependencies are required at playback.
+
 ## Run the laboratory
 
 From this directory, with Python 3.10 or newer:
