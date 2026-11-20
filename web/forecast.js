@@ -14,8 +14,8 @@ export function forecastPlot(p,field,k,actual){
   const ticks=(origin,size)=>Array.from({length:Math.ceil(size/scale/10)+1},(_,i)=>(Math.ceil(-origin/scale/10)+i)*10);
   const ep=projected(p,field,k),ex=X(ep[0]),ey=Y(ep[1]);
   return `<svg class="prediction" viewBox="0 0 ${w} ${h}" role="img" aria-label="Predicted endpoint ${xy(ep)}${actual?', actual endpoint '+xy(actual):''}">
-    ${ticks(X(0),w).map(v=>`<path class="graticule" d="M${X(v)} 0v${h}"/>${v%20===0&&X(v)>20&&X(v)<w-25?`<text x="${X(v)+3}" y="${h-5}">${v}</text>`:''}`).join('')}
-    ${ticks(Y(0),h).map(v=>`<path class="graticule" d="M0 ${Y(v)}h${w}"/>${v%20===0&&Y(v)>16&&Y(v)<h-15?`<text x="5" y="${Y(v)-5}">${v}</text>`:''}`).join('')}
+    ${ticks(X(0),w).map(v=>`<path class="graticule" d="M${X(v)} 0v${h}"/>${v%20===0&&X(v)>28&&X(v)<w-28?`<text text-anchor="middle" x="${X(v)}" y="${h-5}">${v}</text>`:''}`).join('')}
+    ${ticks(Y(0),h).map(v=>`<path class="graticule" d="M0 ${Y(v)}h${w}"/>${v%20===0&&Y(v)>24&&Y(v)<h-22?`<text x="5" y="${Y(v)-5}">${v}</text>`:''}`).join('')}
     <path d="M${times.map(t=>projected(p,field,k,t)).map(([x,y])=>X(x)+' '+Y(y)).join(' L')}" class="forecast-path"/>
     <circle cx="${X(p.x)}" cy="${Y(p.y)}" r="4" class="release-point"/>
     <circle cx="${ex}" cy="${ey}" r="4.5" class="forecast-point"/>
