@@ -1,41 +1,50 @@
 import {fmt} from './scope.js';
-const labels={passive:'Passive observation',random:'Random',learned:'Trained chooser',gain:'Information gain'};
-const palette={passive:'var(--muted)',random:'var(--blue)',learned:'var(--accent)',gain:'var(--primary-action)'};
+
+const labels={learned:'Trained chooser',gain:'Information gain',fixed:'Fixed plan',random:'Random',passive:'Passive observation'};
+const curvesShown=['passive','random','learned','gain'];
 let split='test',group='All';
-export function benchmark(data,replay){
-  const {n,curves,at_three}=data.splits[split][group], names=Object.keys(labels), budgets=curves.passive.map((_,i)=>i);
-  const k=data.three_budget, fixed=at_three.fixed, retro=data.retrospective[split].groups[group];
+const options=(items,current)=>items.map(([v,t])=>`<option value="${v}" ${v===current?'selected':''}>${t}</option>`).join('');
+const key=s=>`<i class="swatch ${s}" aria-hidden="true"></i>`;
+
+function errorChart(curves,fixed,k){
   const max=Math.max(5,Math.ceil(Math.max(...Object.values(curves).flat())/5)*5);
-  const X=i=>49+494*i/data.budget,Y=v=>195-v/max*163;
-  const legend=names.map(s=>`<span style="--line:${palette[s]}">${labels[s]}</span>`).join('');
-  const ticks=Array.from({length:5},(_,i)=>i*max/4);
-  const chart=`<svg class="chart" viewBox="0 0 580 240" role="img" aria-label="Mean forecast error in chamber units versus experiments used. Exact values in the table below.">
-  ${ticks.map(v=>`<path d="M46 ${Y(v)} H547" stroke="var(--border)"/><text x="39" text-anchor="end" y="${Y(v)+4}">${fmt(v)}</text>`).join('')}
-  ${names.map(s=>`<polyline fill="none" stroke="${palette[s]}" stroke-width="${s==='learned'?5:2.5}" stroke-dasharray="${s==='gain'?'4 6':'none'}" points="${curves[s].map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>`).join('')}
-  <g transform="translate(${X(k)},${Y(fixed.error)})"><title>Frozen fixed triple: ${fmt(fixed.error,6)} units, test ${k}</title><path d="M0 -6 L6 0 L0 6 L-6 0 Z" fill="var(--surface)" stroke="var(--text)" stroke-width="2"/></g>
-  ${budgets.map(i=>`<text x="${X(i)}" y="215" text-anchor="middle">${i}</text>`).join('')}
-  <text x="295" y="236" text-anchor="middle">Experiments used</text><text x="49" y="18">Mean endpoint error (units)</text></svg>`;
-  const opts=vals=>vals.map(([v,t],i)=>`<option value="${v}" ${(v===split||v===group)?'selected':''}>${t}</option>`).join('');
-  const solvedAt=curves.learned.findIndex(v=>v===0);
-  document.querySelector('#app').innerHTML=`<section class="hero"><div><div class="eyebrow">Benchmark</div><h1>The cost of knowing.</h1></div><div class="intro"><p>${solvedAt<0?'The chooser still had forecast error at the final budget.':`The trained chooser reached zero forecast error after ${solvedAt} experiments.`} Random testing still averaged ${fmt(curves.random.at(-1),2)} units of error after ${data.budget}.</p></div></section>
-  <div class="benchgrid"><section class="panel card"><div class="space wrap"><h2>Forecast error</h2><span class="pill">${n} configurations</span></div>
-  ${chart}<div class="plotlegend">${legend}<b>◇ Frozen triple</b></div><p class="under">The diamond is a three-test result, not a curve. Dashes mark information gain where it overlaps the chooser.</p>
-  <div class="tablewrap"><table><caption class="tiny">Mean distance in chamber units · lower is better</caption><thead><tr><th>Strategy / budget</th>${budgets.map(i=>'<th>'+i+'</th>').join('')}</tr></thead><tbody>${names.map(s=>`<tr><th>${labels[s]}</th>${curves[s].map(v=>'<td>'+v.toFixed(2)+'</td>').join('')}</tr>`).join('')}</tbody></table></div></section>
-  <aside class="controls"><h2>Compare worlds</h2><label class="ctrlLabel" for="split">Evaluation split</label><select id="split">${opts([['test','Held-out layouts'],['transfer','Unseen family × strength']])}</select>
-  <label class="ctrlLabel" for="family">World family</label><select id="family">${opts(Object.keys(data.splits[split]).map(x=>[x,x]))}</select>
-  <p class="note">${n} worlds × 4 forecasts each. Random curves average ${data.seeds} fixed seeds per world before averaging worlds.</p>
-  <button class="solid full" id="branch">Replay fixed vs. adaptive →</button></aside></div>
-  <section class="card block"><div class="kicker">Matched budget · ${n} worlds</div><h2>Three tests, chosen when?</h2>
-  <p>The fixed policy commits to its family’s training-selected triple before test one. Only the chooser and information-gain policy use the outcomes to design the next test.</p>
-  <div class="tablewrap"><table><thead><tr><th>Strategy</th><th>Mean endpoint error</th><th>One rule / runs</th></tr></thead><tbody>${['fixed','learned','random','gain'].map(s=>`<tr><th>${labels[s]||'Frozen triple'}</th><td>${fmt(at_three[s].error,6)}</td><td>${at_three[s].unique} / ${at_three[s].runs}</td></tr>`).join('')}</tbody></table></div>
-  <p class="under">Random counts world–seed pairs: ${at_three.random.unique/data.seeds} of ${n} worlds identified per seed on average. Other policies run once per world.</p>
-  <details><summary>Retrospective check (not a deployable baseline)</summary><p>Choosing a new fixed triple with this split’s answers gives ${fmt(retro.error,6)} units of error and identifies ${retro.unique}/${retro.runs} worlds. These selections are not used by the frozen policy or replay.</p></details></section>
-  <div class="workbench block"><section class="card"><h2>Choosing a test ≠ discovering a law.</h2><p>The network decides what to change next. A separate evaluator predicts motion by averaging the endpoints of every rule still consistent with the evidence. On the transfer set the model sees new combinations of familiar strengths and families, not new laws.</p></section>
-  <section class="card"><h2>Two episodes</h2><p class="under">The biggest win and loss on this split against random seed 0, averaged over budgets 1–${data.budget}.</p>
-  <button class="examplebtn" id="win"><strong>Where the chooser wins →</strong></button>
-  <button class="examplebtn" id="struggle"><strong>Where random gets lucky →</strong></button></section></div>`;
-  document.querySelector('#split').onchange=e=>{split=e.target.value;benchmark(data,replay)};
-  document.querySelector('#family').onchange=e=>{group=e.target.value;benchmark(data,replay)};
-  for(const example of ['win','struggle'])document.querySelector('#'+example).onclick=()=>replay(data.examples[split][example].id);
+  const left=72,right=550;
+  const X=i=>left+(right-left)*i/(curves.learned.length-1),Y=v=>186-v/max*145;
+  const budgets=curves.learned.map((_,i)=>i);
+  return `<svg class="chart" viewBox="0 0 580 238" role="img" aria-label="Mean forecast error versus tests used. Information-gain rings coincide with the trained chooser line. Tables follow.">
+    <text x="13" y="19">Endpoint error (units)</text>
+    ${Array.from({length:5},(_,i)=>max*i/4).map(v=>`<path class="graticule" d="M${left} ${Y(v)}H${right}"/><text x="${left-8}" y="${Y(v)+4}" text-anchor="end">${fmt(v,2)}</text>`).join('')}
+    ${budgets.map(i=>`<path class="graticule" stroke-dasharray="1 4" d="M${X(i)} 35V188"/><text x="${X(i)}" y="207" text-anchor="middle">${i}</text>`).join('')}
+    ${curvesShown.map(s=>`<polyline class="curve ${s}" points="${curves[s].map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>`).join('')}
+    ${curves.gain.map((v,i)=>`<circle class="gain-point" cx="${X(i)}" cy="${Y(v)}" r="3.5"/>`).join('')}
+    <g transform="translate(${X(k)},${Y(fixed.error)})"><title>Fixed plan at test ${k}: ${fixed.error} units</title><path class="diamond" d="M0 -6 6 0 0 6 -6 0Z"/></g>
+    <text x="${(left+right)/2}" y="231" text-anchor="middle">Tests used</text></svg>`;
+}
+export function benchmark(data,replay){
+  const {n,curves,at_three}=data.splits[split][group],k=data.three_budget,retro=data.retrospective[split].groups[group];
+  const budgets=curves.passive.map((_,i)=>i);
+  document.querySelector('#app').innerHTML=`<section class="hero"><div><div class="eyebrow">Benchmark / Policy evaluation</div><h1>Forecast error</h1>
+    <p>Compare how well each strategy predicts four unseen endpoints as it spends its experiment budget.</p></div></section>
+    <div class="workbench benchmark"><div><figure class="chamber"><figcaption><span class="instrument-name"><i aria-hidden="true">03</i> Error by test budget</span><span class="figure-state">${n} worlds</span></figcaption>
+    <div class="filters"><label>Evaluation split<select id="split">${options([['test','Held-out layouts'],['transfer','Transfer · family × strength']],split)}</select></label>
+    <label>World family<select id="family">${options(Object.keys(data.splits[split]).map(x=>[x,x]),group)}</select></label></div>
+    ${errorChart(curves,at_three.fixed,k)}<div class="plotlegend">${['learned','gain','random','passive','fixed'].map(s=>`<span>${key(s)}${labels[s]}</span>`).join('')}</div></figure>
+    <section class="bench-results"><div class="section-head"><h2>Three-test results</h2><span class="tiny">Lower error is better</span></div>
+    <table><thead><tr><th>Strategy</th><th>Mean error · units</th><th>One rule / runs</th></tr></thead><tbody>${['learned','gain','fixed','random'].map(s=>`<tr class="${s==='learned'?'highlight':''}"><th scope="row">${labels[s]}</th><td title="${at_three[s].error}">${fmt(at_three[s].error,6)}</td><td>${at_three[s].unique} / ${at_three[s].runs}</td></tr>`).join('')}</tbody></table>
+    <p class="under">One rule means only one catalog rule fits the observations. Random counts world–seed pairs (${data.seeds} seeds per world).</p>
+    <details><summary>Error at every test budget</summary><div class="tablewrap"><table><thead><tr><th>Strategy / tests</th>${budgets.map(i=>'<th>'+i+'</th>').join('')}</tr></thead><tbody>${curvesShown.map(s=>`<tr><th>${labels[s]}</th>${curves[s].map(v=>`<td title="${v}">${v.toFixed(2)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>
+    <details><summary>Retrospective check</summary><p class="under">Selecting the best fixed plan using this split’s own answers gives ${fmt(retro.error,6)} units of error and ${retro.unique}/${retro.runs} worlds with one rule. This hindsight result is not the training-selected baseline.</p></details></section></div>
+    <aside class="controls"><div class="kicker">Matched budget / 03 tests</div><h2>Plan or adapt?</h2>
+    <p class="sub">The fixed plan commits to three tests. The trained chooser uses each observation to decide what to try next.</p>
+    <button class="solid full" id="branch">Replay fixed vs. adaptive →</button>
+    <div class="line"></div><h3>Reading the plot</h3><p class="sub">The diamond marks the fixed plan at test three. Open rings mark information gain where it overlaps the chooser.</p>
+    <p class="sub">All strategies use the same predictor over the same catalog. Only the choice of tests changes.</p>
+    <div class="line"></div><h3>Other episodes</h3><button class="examplebtn" id="win">Where the chooser wins ↗</button>
+    <button class="examplebtn" id="struggle">Where random gets lucky ↗</button></aside></div>`;
+  for(const id of ['split','family'])document.getElementById(id).onchange=e=>{
+    if(id==='split')split=e.target.value;else group=e.target.value;
+    benchmark(data,replay);document.getElementById(id).focus({preventScroll:true})
+  };
+  for(const example of ['win','struggle'])document.getElementById(example).onclick=()=>replay(data.examples[split][example].id);
   document.querySelector('#branch').onclick=()=>replay(data.examples[split].branch[group].id,'compare');
 }
