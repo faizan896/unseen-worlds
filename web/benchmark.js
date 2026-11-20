@@ -14,17 +14,19 @@ export function benchmark(data,replay){
   ${budgets.map(i=>`<text x="${X(i)}" y="215" text-anchor="middle">${i}</text>`).join('')}
   <text x="295" y="236" text-anchor="middle">Experiments used</text><text x="49" y="18">Mean endpoint error (units)</text></svg>`;
   const opts=vals=>vals.map(([v,t],i)=>`<option value="${v}" ${(v===split||v===group)?'selected':''}>${t}</option>`).join('');
-  document.querySelector('#app').innerHTML=`<section class="hero"><div class="kicker">Research results / Benchmark</div><h1>Experiment <i>efficiency</i></h1><p>How much does one well-chosen test buy? Four strategies, the same forecast engine, and the same hidden worlds.</p></section>
+  const solvedAt=curves.learned.findIndex(v=>v===0);
+  document.querySelector('#app').innerHTML=`<section class="hero"><div><div class="eyebrow">Benchmark</div><h1>The cost of knowing.</h1></div><div class="intro"><p>${solvedAt<0?'The chooser still had forecast error at the final budget.':`The trained chooser reached zero forecast error after ${solvedAt} experiments.`} Random testing still averaged ${fmt(curves.random.at(-1),2)} units of error after ${data.budget}.</p></div></section>
   <div class="benchgrid"><section class="panel card"><div class="space wrap"><h2>Forecast error</h2><span class="pill">${n} configurations</span></div>
   ${chart}<div class="plotlegend">${legend}</div><p class="under">The dashed information-gain line overlays the trained chooser when their scores match.</p>
   <div class="tablewrap"><table><caption class="tiny">Mean distance in chamber units · lower is better</caption><thead><tr><th>Strategy / budget</th>${budgets.map(i=>'<th>'+i+'</th>').join('')}</tr></thead><tbody>${names.map(s=>`<tr><th>${labels[s]}</th>${curves[s].map(v=>'<td>'+v.toFixed(2)+'</td>').join('')}</tr>`).join('')}</tbody></table></div></section>
-  <aside class="panel controls"><div class="kicker">Analysis settings</div><h2>Test population</h2><label class="ctrlLabel" for="split">Evaluation split</label><select id="split">${opts([['test','Held-out layouts'],['transfer','Unseen family × strength']])}</select>
+  <aside class="controls"><h2>Compare worlds</h2><label class="ctrlLabel" for="split">Evaluation split</label><select id="split">${opts([['test','Held-out layouts'],['transfer','Unseen family × strength']])}</select>
   <label class="ctrlLabel" for="family">World family</label><select id="family">${opts(Object.keys(data.splits[split]).map(x=>[x,x]))}</select>
   <p class="note">${n} worlds × 4 forecasts each. Random curves average ${data.seeds} fixed seeds per world before averaging worlds.</p>
-  <h3>Replay casebook</h3><p class="under">Split-wide extremes, not typical runs. Compared with random seed 0 by mean error over budgets 1–${data.budget}.</p>
-  <button class="examplebtn" id="win"><strong>Where the chooser wins ↗</strong>Watch a diagnostic test pay off.</button>
-  <button class="examplebtn" id="struggle"><strong>Where random gets lucky ↗</strong>A rare test that identifies a whole rule.</button></aside></div>
-  <section class="panel card block"><div class="kicker">Interpretation</div><h2>A result about choosing, not inventing laws.</h2><p>The tiny network ranks interventions from measured motion. A separate evaluator enumerates compatible known laws and averages their endpoint predictions. Transfer holds out strength–family combinations, not entire mechanisms. It tests reuse of a normalized response in a noiseless catalog.</p></section>`;
+  </aside></div>
+  <div class="workbench block"><section class="card"><h2>Choosing a test ≠ discovering a law.</h2><p>The network decides what to change next. A separate evaluator predicts motion by averaging the endpoints of every rule still consistent with the evidence. On the transfer set the model sees new combinations of familiar strengths and families, not new laws.</p></section>
+  <section class="card"><h2>Two episodes</h2><p class="under">The biggest win and loss on this split against random seed 0, averaged over budgets 1–${data.budget}.</p>
+  <button class="examplebtn" id="win"><strong>Where the chooser wins →</strong></button>
+  <button class="examplebtn" id="struggle"><strong>Where random gets lucky →</strong></button></section></div>`;
   document.querySelector('#split').onchange=e=>{split=e.target.value;benchmark(data,replay)};
   document.querySelector('#family').onchange=e=>{group=e.target.value;benchmark(data,replay)};
   for(const example of ['win','struggle'])document.querySelector('#'+example).onclick=()=>replay(data.examples[split][example].id);
