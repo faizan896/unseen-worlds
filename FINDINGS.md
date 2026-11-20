@@ -2,7 +2,59 @@
 
 The chooser learned a three-question decision tree from imitation. In this catalog, observing two seconds of motion cannot distinguish any of the eight mechanisms in a family. The trained chooser selected three tests that narrowed the set from eight to four to two to one on **every one of 288 held-out worlds**. Its final two tests spent budget but added no evidence. That is a result about *designing experiments*: an exact, catalog-aware decoder still made the forecasts.
 
-## Design and metric
+## Do observations change which test is worth doing?
+
+**Yes, in this catalog.** After three tests the unchanged 656-parameter chooser identified **288/288** rules and had **0** mean endpoint error. Precommitting to the best triple on the training worlds identified **60/288** with **2.65** units of error. The four unseen forecast tasks, simulator, eligible interventions and closed-catalog predictor are identical. Only test selection changes.
+
+### Prospective: choose on train, freeze, then evaluate
+
+We exhaustively scored all 56 unordered triples of distinct legal actions on each family's 144 training configurations (432 total). The objective was mean Euclidean endpoint error, averaging the four forecasts within each world, then averaging worlds with equal weight. We did **not** optimize the singleton count. Ties at 12 decimal places go to the lexicographically smallest ascending action-index tuple. The final posterior is order-independent because trials reset; for playback we run the selected indices in ascending order. No winning family score was tied.
+
+| Family inferred from opening motion | Frozen tests, in execution order | Training error |
+|---|---|---:|
+| Drift | Reverse charge → Move north → Launch south | 2.250000 |
+| Load | Increase mass → Move east → Launch south | 2.666667 |
+| Boundary | Reverse charge → Move east → Move north | 2.816667 |
+
+The policy reads the opening motion to infer its family, commits to the corresponding plan, then ignores every intermediate result **for action selection**. The predictor still uses all three observations.
+
+Each cell below is **mean endpoint error; singleton outcomes / runs**. A singleton means exactly one compatible rule, not merely a correct endpoint. Deterministic policies run once per world. Random uses the original 16 seeds per world: its numerator counts successful world–seed pairs, *not* distinct worlds. Divide by 16 for the mean number of identified worlds per seed (47/216 on layouts and 16.8125/72 on transfer).
+
+| Split / family | Frozen triple | Random | Trained chooser | Information gain |
+|---|---:|---:|---:|---:|
+| Held-out layouts, all | 2.577778; 45/216 | 5.624715; 752/3456 | 0; 216/216 | 0; 216/216 |
+| Drift | 2.250000; 18/72 | 6.030758; 258/1152 | 0; 72/72 | 0; 72/72 |
+| Load | 2.666667; 18/72 | 5.288296; 251/1152 | 0; 72/72 | 0; 72/72 |
+| Boundary | 2.816667; 9/72 | 5.555093; 243/1152 | 0; 72/72 | 0; 72/72 |
+| Transfer, all | 2.866667; 15/72 | 5.914745; 269/1152 | 0; 72/72 | 0; 72/72 |
+| Drift | 1.350000; 6/24 | 3.531250; 95/384 | 0; 24/24 | 0; 24/24 |
+| Load | 4.000000; 6/24 | 7.874792; 84/384 | 0; 24/24 | 0; 24/24 |
+| Boundary | 3.250000; 3/24 | 6.338194; 90/384 | 0; 24/24 | 0; 24/24 |
+
+### Retrospective only: choose with the split's answers
+
+We independently reran the 56-way search per family **on each evaluation split**, with the same error objective and tie-break. Both hindsight searches chose the same named triples as training. This equality is an outcome, not an assumption. The separately fitted results are:
+
+| Split | Drift: error; unique | Load: error; unique | Boundary: error; unique | All: error; unique |
+|---|---:|---:|---:|---:|
+| Held-out layouts | 2.250000; 18/72 | 2.666667; 18/72 | 2.816667; 9/72 | 2.577778; 45/216 |
+| Transfer | 1.350000; 6/24 | 4.000000; 6/24 | 3.250000; 3/24 | 2.866667; 15/72 |
+
+This reproduces the local **60/288** hindsight check. It is not a deployable baseline, nor is 60 the maximum singleton count attainable by optimizing a *different* objective. In fact the frozen plan beats random on mean error but identifies slightly fewer worlds on average. All candidate scores and denominators are in the [search audit](results/triple-search.json).
+
+### A fork you can watch
+
+Open `/?world=b960e56a29&replay=compare&step=1` on the lab host. In this transfer Load world both policies first increase mass. The observed endpoint **(66, 24)** prompts the chooser to **reduce mass** next; in a matched world with the identical opening, the endpoint **(66, 72)** prompts it to **move north** instead. These are recorded decisions from the same checkpoint, not a post-hoc model explanation. The fixed policy moves east second in both worlds.
+
+After test three the chooser has one rule, **Load-sensitive lift / mass ≤ 0.8 / east speed ≥ 10**. The frozen triple retains that rule, **Load-sensitive lift / mass ≤ 0.8**, and **Load-sensitive lift**, leaving **7.6** units of forecast error. The replay advances both policies together and lets you switch which motion is playing. The casebook deliberately picks a high fixed-error example, not an average one.
+
+### Why compare to information gain?
+
+The hand-coded policy represents the *adaptive expert the network imitated*: with a uniform prior over the remaining known laws, it chooses the intervention with the highest expected information gain. It has access to the hypothesis catalog, not the hidden answer. Matching its identification and forecast results tests whether the small network learned to use feedback as effectively as that teacher on these worlds. It does not establish universal optimality, discovery of new laws, or a learned forecasting advantage: the model chooses the tests; the shared predictor averages endpoints over compatible predefined rules.
+
+Reproduce with `python -m scripts.benchmark` followed by `python -m unittest discover -s tests -v`. No retraining is needed (checkpoint SHA-256: `cc7efe351752f6989d352bac08848d08fb53382fe5c0e5f39d10294a9b49eb43`).
+
+## Original five-test study: design and metric
 
 432 train configurations, 8,640 labeled history prefixes; four teacher/random mixtures per configuration. The 18–24–8 tanh network has 656 trainable parameters. It regresses the eight candidate interventions' information gains (bits) from observations only. At inference we mask spent actions and take the highest score. Teacher and gain baseline use the same uniform prior and eliminate only rules contradicted by observations. The learned chooser does not call either. Even after identification, every active strategy takes five distinct actions so the cost of continuing is visible.
 

@@ -9,10 +9,11 @@ from lab.world import BUDGET
 class Records(unittest.TestCase):
     def test_every_recorded_episode_matches_fresh_policy_and_displayed_film(self):
         model=load_model()
+        frozen=serve('/api/benchmark',{})["fixed_plans"]
         self.assertEqual(set(records()),set(WORLDS))
         for wid,w in WORLDS.items():
-            for p in ("learned","random"):
-                actual=json.loads(compact(episode(w,p,model,record=True)))
+            for p in ("learned","random","fixed"):
+                actual=json.loads(compact(episode(w,p,model,record=True,fixed_plans=frozen)))
                 self.assertEqual(actual,records()[wid][p])
                 data=serve('/api/replay',dict(world=[wid],policy=[p]))
                 for r,trial in zip(actual['steps'],data['trials'],strict=True):

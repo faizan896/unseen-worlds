@@ -1,9 +1,11 @@
 import {animate,stop,scopeMarkup,fmt,xy,field} from './scope.js';
 import {benchmark} from './benchmark.js';
+import {compare} from './comparison.js';
 const $=s=>document.querySelector(s),app=$('#app');
 const props={x:'Position x',y:'Position y',vx:'Velocity x',vy:'Velocity y',q:'Charge',mass:'Mass'};
 const num=n=>String(n).padStart(2,'0');
 let base,log=[],phase='lab',showing=0,mode='lab',knowledge,taskset,multipliers=[],score,episodes={},policy='learned',step=0,busy=false;
+let comparisonFilm='learned';
 async function api(path,params={}){const r=await fetch('api/'+path+'?'+new URLSearchParams({...(base?{world:base.world}:{}),...params}));if(!r.ok)throw Error('The lab could not load that request. Check the world link or try again.');return r.json()}
 function notice(msg){const n=$('#notice');n.textContent=msg;n.className='noticeOn';clearTimeout(notice.timer);notice.timer=setTimeout(()=>{n.className='';n.textContent=''},3600)}
 function guarded(fn){return async(...args)=>{if(busy)return;busy=true;try{await fn(...args)}catch(e){notice(e.message)}finally{busy=false}}}
@@ -86,11 +88,23 @@ function replay(){
   $('#share').onclick=async()=>{try{await navigator.clipboard.writeText(urlFor(true).href);notice('Replay link copied')}catch{prompt('Copy this replay link:',urlFor(true).href)}};
   newHook();animate(trial,base);history.replaceState({},'',urlFor(true))
 }
-function render(){stop();nav();if(mode==='bench')return benchmark(knowledge,guarded(async id=>{await openWorld(id);await enterReplay('learned')}));({lab,forecast,reveal,replay})[phase]()}
+async function enterComparison(n=0){
+  [episodes.learned,episodes.fixed,knowledge]=await Promise.all([
+    api('replay',{policy:'learned'}),api('replay',{policy:'fixed'}),knowledge||api('benchmark')]);
+  policy='compare';mode='lab';phase='comparison';comparisonFilm='learned';
+  step=Math.max(0,Math.min(episodes.fixed.steps.length,Math.trunc(Number(n)||0)));
+  render();window.scrollTo(0,0)
+}
+function comparison(){
+  const witness=Object.values(knowledge.examples).flatMap(e=>Object.values(e.branch)).find(w=>w.id===base.world);
+  compare(base,episodes,step,comparisonFilm,witness,(n,film)=>{step=n;comparisonFilm=film;render()});
+  history.replaceState({},'',urlFor(true))
+}
+function render(){stop();nav();if(mode==='bench')return benchmark(knowledge,guarded(async (id,p)=>{await openWorld(id);if(p==='compare')await enterComparison();else await enterReplay('learned')}));({lab,forecast,reveal,replay,comparison})[phase]()}
 $('#guide').onclick=()=>$('#manual').showModal();
 $('#toTop').onclick=()=>window.scrollTo(0,0);
 $('#navLab').onclick=()=>{if(base){mode='lab';render()}};
 $('#navBench').onclick=guarded(async()=>{knowledge??=await api('benchmark');mode='bench';render()});
 const q=new URLSearchParams(location.search);
-try{await openWorld(q.get('world'));if(['learned','random'].includes(q.get('replay')))await enterReplay(q.get('replay'),q.get('step'));else render()}
+try{await openWorld(q.get('world'));if(q.get('replay')==='compare')await enterComparison(q.get('step'));else if(['learned','random'].includes(q.get('replay')))await enterReplay(q.get('replay'),q.get('step'));else render()}
 catch(e){app.innerHTML='<p class="note">This world link is unavailable. <a href="./">Open the laboratory</a></p>';notice(e.message)}
