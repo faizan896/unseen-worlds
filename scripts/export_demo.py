@@ -37,22 +37,22 @@ def exported_demo():
         rows.append(f'<tr><th scope="row">{name}</th><td>{sum(v["unique"] for v in values)} / {runs}</td>'
                     f'<td>{error:.2f} units</td></tr>')
 
-    styles = (web / "style.css").read_text()
+    styles = (web / "style.css").read_text(encoding="utf-8")
     for font in ("geist", "geist-mono"):
         path = f"fonts/{font}.woff2"
         styles = styles.replace(f"url({path})", f'url({data_url("font/woff2", (web/path).read_bytes())})')
-    styles += '\n/* ' + (web / "fonts/LICENSE.txt").read_text() + ' */\n'
+    styles += '\n/* ' + (web / "fonts/LICENSE.txt").read_text(encoding="utf-8") + ' */\n'
     styles += '.bar nav a{align-self:center;padding:12px 0;font-size:13px}'
 
     # An inline ES module has no directory for relative imports; embed its one dependency.
     scope = data_url("text/javascript", (web / "scope.js").read_bytes())
-    comparison = (web / "comparison.js").read_text().replace("'./scope.js'", repr(scope))
+    comparison = (web / "comparison.js").read_text(encoding="utf-8").replace("'./scope.js'", repr(scope))
     bindings = {
         "STYLE": styles, "MARK": data_url("image/svg+xml", (web / "mark.svg").read_bytes()),
         "ROWS": "".join(rows), "COMPARISON": data_url("text/javascript", comparison.encode()),
         "RECORDINGS": json.dumps(dict(primary=primary, worlds=recordings), separators=(",", ":")).replace("<", "\\u003c"),
     }
-    page = (ROOT / "portfolio/index.html").read_text()
+    page = (ROOT / "portfolio/index.html").read_text(encoding="utf-8")
     for name, value in bindings.items():
         page = page.replace(f"@@{name}@@", value)
     return page
