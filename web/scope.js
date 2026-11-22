@@ -8,9 +8,9 @@ export function field(trial) {
 
 export function scopeMarkup(title) {
   return `<figure class="chamber">
-    <figcaption><span>Motion chamber</span><span class="figure-state">${title}</span></figcaption>
+    <figcaption><span>Probe trajectories</span><span class="figure-state">${title}</span></figcaption>
     <div class="scope">
-      <div class="scope-readout"><span id="position"></span><span class="axes">x → east &nbsp; y ↓ south</span></div>
+      <div class="scope-readout"><span class="telemetry"><b>A</b><span>Position</span> <span id="position"></span></span><span class="axes">X → east &nbsp; Y ↓ south</span></div>
       <canvas class="stage" aria-label="Two-second motion of probe A and references B and C"></canvas>
       <div class="legend"><span>Probe A</span><span>Reference B</span><span>Reference C</span></div>
     </div>
@@ -38,6 +38,11 @@ export function animate(trial, base) {
   const ink = color('scope'), grid = color('grid'), dark = color('chamber');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = base.duration;
+  // Keep the opening in view when comparing a trial, using the same units on both axes.
+  const positions = [...base.film, ...trial.film].flat();
+  const xs = positions.map(([x]) => x), ys = positions.map(([, y]) => y);
+  const left = Math.min(...xs), right = Math.max(...xs);
+  const top = Math.min(...ys), bottom = Math.max(...ys);
   let active = true, paused = reduce.matches, visible = true, elapsed = 0, last = null, frame = 0;
 
   function paint() {
@@ -50,9 +55,9 @@ export function animate(trial, base) {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    const scale = Math.min((w - 30) / 210, (h - 20) / 116);
-    const X = x => w / 2 + (x - 105) * scale;
-    const Y = y => h / 2 + (y - 68) * scale;
+    const scale = Math.min((w - 86) / Math.max(1,right-left), (h - 68) / Math.max(1,bottom-top));
+    const X = x => w / 2 + (x - (left + right)/2) * scale;
+    const Y = y => h / 2 + (y - (top + bottom)/2) * scale;
     const phase = Math.min(elapsed, duration);
     const sample = (trial.film.length - 1) * phase / duration;
     const i = Math.min(trial.film.length - 2, Math.floor(sample)), frac = sample - i;
@@ -67,13 +72,19 @@ export function animate(trial, base) {
     }
     ctx.font = '10px ui-monospace, monospace';
     ctx.fillStyle = ink;
-    for (let n = Math.ceil(-X(0)/(20*scale))*20; X(n) <= w; n += 20) {
-      line(X(n), 0, X(n), h, grid, .65);
-      if (n >= 0 && n % 40 === 0) ctx.fillText(n, X(n) + 4, h - 5);
+    const spacing = scale >= 4 ? 10 : 20;
+    const rulerX = 26, rulerY = h - 18;
+    line(rulerX, 0, rulerX, rulerY, grid);
+    line(rulerX, rulerY, w, rulerY, grid);
+    for (let n = Math.ceil((rulerX-X(0))/(spacing*scale))*spacing; X(n) <= w; n += spacing) {
+      line(X(n), 0, X(n), rulerY, grid, .55);
+      line(X(n), rulerY, X(n), rulerY+3, ink);
+      if (X(n) < w-17) ctx.fillText(n, X(n)-3, h-2);
     }
-    for (let n = Math.ceil(-Y(0)/(20*scale))*20; Y(n) <= h; n += 20) {
-      line(0, Y(n), w, Y(n), grid, .65);
-      if (n >= 0 && n % 40 === 0 && Y(n) > 12) ctx.fillText(n, 3, Y(n) - 4);
+    for (let n = Math.ceil(-Y(0)/(spacing*scale))*spacing; Y(n) <= rulerY; n += spacing) {
+      line(rulerX, Y(n), w, Y(n), grid, .55);
+      line(rulerX-3, Y(n), rulerX, Y(n), ink);
+      if (Y(n) > 7) ctx.fillText(n, 0, Y(n)+3);
     }
     function track(film, j, end, stroke, width, dash, tip) {
       ctx.beginPath(); ctx.setLineDash(dash);
@@ -91,12 +102,12 @@ export function animate(trial, base) {
       const px = a + (c-a)*frac, py = b + (d-b)*frac;
       const x = X(px), y = Y(py);
       const [sx, sy] = trial.film[0][j], [ex, ey] = trial.film.at(-1)[j];
-      if (j === 0) position.textContent = 'A  ' + xy([px, py]);
+      if (j === 0) position.textContent = xy([px, py]);
       ctx.save();
       if (j === 0 && paused) {
         ctx.globalAlpha = .4; ctx.setLineDash([2, 5]);
-        line(0, y, x, y, hue);
-        line(x, y, x, h, hue);
+        line(rulerX, y, x, y, hue);
+        line(x, y, x, rulerY, hue);
         ctx.setLineDash([]);
       }
       ctx.globalAlpha = .55;
@@ -110,7 +121,7 @@ export function animate(trial, base) {
         ring(X(sx), Y(sy), 6 + 34*release, hue);
       }
       ctx.globalAlpha = 1;
-      ctx.shadowColor = hue; ctx.shadowBlur = 8;
+      ctx.shadowColor = hue; ctx.shadowBlur = j === 0 ? 6 : 0;
       track(trial.film, j, i, hue, 2, [], [x, y]);
       const r = w < 440 ? 4.5 : 6;
       ctx.translate(x, y);
@@ -133,6 +144,7 @@ export function animate(trial, base) {
       ctx.restore();
     }
     scrub.value = phase.toFixed(2);
+    scrub.style.setProperty('--progress', (phase / duration * 100) + '%');
     clock.textContent = phase.toFixed(2) + ' / ' + duration + ' s';
   }
 
