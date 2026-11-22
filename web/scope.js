@@ -55,7 +55,9 @@ export function animate(trial, base) {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    const scale = Math.min((w - 86) / Math.max(1,right-left), (h - 68) / Math.max(1,bottom-top));
+    const plotWidth = w - Math.min(86, w / 2);
+    const plotHeight = h - Math.min(68, h / 2);
+    const scale = Math.min(plotWidth / Math.max(1,right-left), plotHeight / Math.max(1,bottom-top));
     const X = x => w / 2 + (x - (left + right)/2) * scale;
     const Y = y => h / 2 + (y - (top + bottom)/2) * scale;
     const phase = Math.min(elapsed, duration);
@@ -72,7 +74,7 @@ export function animate(trial, base) {
     }
     ctx.font = '10px ui-monospace, monospace';
     ctx.fillStyle = ink;
-    const spacing = scale >= 4 ? 10 : 20;
+    const spacing = 10 * 2 ** Math.ceil(Math.log2(32 / (10 * scale)));
     const rulerX = 26, rulerY = h - 18;
     line(rulerX, 0, rulerX, rulerY, grid);
     line(rulerX, rulerY, w, rulerY, grid);
