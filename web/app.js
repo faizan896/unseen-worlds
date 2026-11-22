@@ -40,7 +40,7 @@ function labHeader(){
 function meter(n){return `<div class="budget"><span>Experiments used</span><span class="meter" aria-hidden="true">${Array.from({length:base.budget},(_,i)=>`<i class="${i<n?'used':''}"></i>`).join('')}</span><span class="value">${n}/${base.budget}</span></div>`}
 function journal(){
   return `<section class="journal"><div class="space"><h2>Observation log</h2><span class="tiny">Probe A</span></div>
-    <div class="tablewrap"><table><thead><tr><th>Observation</th><th>Endpoint</th><th>Field (u/s²)</th><th><span class="sr-only">Playback</span></th></tr></thead><tbody>
+    <div class="tablewrap"><table><thead><tr><th>Observation</th><th>Endpoint</th><th>Field (u/s²)</th><th>Playback</th></tr></thead><tbody>
     ${[base,...log].map((r,i)=>`<tr><th><span class="idx">${num(i)}</span>${i?base.actions[r.action][0]:'Opening scene'}</th>
       <td>${xy(r.film.at(-1)[0])}</td><td>${xy(field(r))}</td><td><button class="textbtn" data-see="${i}" aria-pressed="${i===showing}" aria-label="View observation ${i}">${i===showing?'Viewing':'View'}</button></td></tr>`).join('')}
     </tbody></table></div></section>`

@@ -149,7 +149,6 @@ select:hover {border-color:var(--muted)}
 .notebook .idx {padding-right:10px}
 .notebook td {padding:8px;font-size:12px}
 .notebook [aria-pressed=true] {color:var(--b);font-weight:400}
-.sr-only {position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%)}
 .value {font-size:13px}
 .notebook details {margin-top:0}
 summary {font-size:14px;font-weight:550}
