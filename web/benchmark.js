@@ -1,6 +1,6 @@
 import {fmt} from './scope.js';
 const labels={passive:'Passive observation',random:'Random',learned:'Trained chooser',gain:'Information gain'};
-const palette={passive:'var(--muted)',random:'var(--blue)',learned:'var(--accent)',gain:'var(--primary-action)'};
+const palette={passive:'var(--muted)',random:'var(--blue)',learned:'var(--accent)',gain:'var(--c)'};
 let split='test',group='All';
 export function benchmark(data,replay){
   const {n,curves,at_three}=data.splits[split][group], names=Object.keys(labels), budgets=curves.passive.map((_,i)=>i);

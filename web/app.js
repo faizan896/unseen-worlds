@@ -10,7 +10,13 @@ async function api(path,params={}){const r=await fetch('api/'+path+'?'+new URLSe
 function notice(msg){const n=$('#notice');n.textContent=msg;n.className='noticeOn';clearTimeout(notice.timer);notice.timer=setTimeout(()=>{n.className='';n.textContent=''},3600)}
 function guarded(fn){return async(...args)=>{if(busy)return;busy=true;try{await fn(...args)}catch(e){notice(e.message)}finally{busy=false}}}
 function hero(section,title,sub,button=''){return `<section class="hero"><div><div class="eyebrow">${section}</div><h1>${title}</h1></div><div class="intro"><p>${sub}</p>${button}</div></section>`}
-function nav(){for(const [id,v] of [['navLab','lab'],['navBench','bench']])$('#'+id).classList.toggle('selected',v===mode)}
+function nav(){
+  for(const [id,v] of [['navLab','lab'],['navBench','bench']]){
+    const button=$('#'+id);
+    button.classList.toggle('selected',v===mode);
+    button.setAttribute('aria-pressed',String(v===mode));
+  }
+}
 function urlFor(replay=false){const u=new URL(location.href);u.searchParams.set('world',base.world);for(const k of ['replay','step'])u.searchParams.delete(k);if(replay){u.searchParams.set('replay',policy);u.searchParams.set('step',step)}return u}
 async function openWorld(id){
   const data=await api('open',id?{world:id}:{});
@@ -20,6 +26,25 @@ async function openWorld(id){
 function newBtn(){return '<button class="textbtn" id="newWorld">Try a different world ↗</button>'}
 function newHook(){$('#newWorld').onclick=guarded(async()=>{if(phase==='lab'&&log.length&&!confirm('Start another world and discard your notebook?'))return;await openWorld('new');render()})}
 function used(){return log.map(r=>r.action)}
+let lastWorld;
+function labHeader(){
+  const entering=lastWorld!==base.world;
+  lastWorld=base.world;
+  return `<section class="world-header${entering?' entering':''}">
+    <div class="world-scene">
+      <div class="planet" aria-hidden="true"></div>
+      <div class="world-intro">
+        <p class="eyebrow">Interactive physics lab</p>
+        <h1>Find the<br><em>hidden law.</em></h1>
+        <p>Three probes. One invisible force. Change a starting condition and predict where the probes will land.</p>
+      </div>
+    </div>
+    <div class="world-strip">
+      <dl><div><dt>World</dt><dd>${base.world}</dd></div><div><dt>Probes</dt><dd>${num(base.scene.length)}</dd></div><div><dt>Run time</dt><dd>${base.duration.toFixed(2)} s</dd></div></dl>
+      ${newBtn()}
+    </div>
+  </section>`;
+}
 function meter(n){return `<div class="budget"><span>Experiments used</span><span class="meter" aria-hidden="true">${Array.from({length:base.budget},(_,i)=>`<i class="${i<n?'used':''}"></i>`).join('')}</span><span class="value">${n}/${base.budget}</span></div>`}
 function journal(){
   return `<section class="journal"><div class="space"><h2>Observation log</h2><span class="tiny">Probe A · measurements</span></div>${[base,...log].map((r,i)=>`<div class="journalrow"><span class="idx">${num(i)}</span><b>${i?base.actions[r.action][0]:'Opening scene'}</b><span class="value">${xy(r.film.at(-1)[0])}<br><small class="muted">field ${xy(field(r))} u/s²</small></span><button class="textbtn" data-see="${i}" aria-label="View observation ${i}">${i===showing?'Viewing':'View'}</button></div>`).join('')}</section>`
@@ -28,7 +53,7 @@ function apparatus(trial){return `<details class="panel card block"><summary>Rel
 function lab(){
   const trial=showing?log[showing-1]:base, spent=log.length, end=spent===base.budget;
   const avail=base.actions.map((a,i)=>[a,i]).filter(([,i])=>!used().includes(i));
-  app.innerHTML=hero('Interactive research','Find the hidden law.','Three objects move under the same invisible force. Change their starting conditions, then see if you—or a small model—can predict where they land.',newBtn())+
+  app.innerHTML=labHeader()+
     `<div class="workbench instrument">${scopeMarkup(showing?'Trial '+num(showing):'Opening scene')}
     <aside class="controls intervention"><h2>Your experiment</h2><p class="sub">Change one property of probe A. The other two probes stay untouched.</p>
     <label class="ctrlLabel" for="action">Starting condition</label><select id="action" ${end?'disabled':''}>${avail.map(([[l],i])=>`<option value="${i}">${l}</option>`).join('')}</select>
