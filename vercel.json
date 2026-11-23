@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "web",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "results/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:endpoint(open|run|tasks|score|replay|benchmark)",
+      "destination": "/api/index?endpoint=:endpoint"
+    }
+  ]
+}
