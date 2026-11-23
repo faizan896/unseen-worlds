@@ -1,3 +1,5 @@
+import {exposureRenderer} from './exposure.js';
+
 export const fmt = (n, d = 1) => Number(n.toFixed(d)).toString();
 export const xy = p => '(' + p.map(x => fmt(x)).join(', ') + ')';
 
@@ -35,6 +37,8 @@ export function animate(trial, base) {
   const style = getComputedStyle(canvas);
   const color = name => style.getPropertyValue('--' + name).trim();
   const hues = ['a', 'b', 'c'].map(color);
+  const exposure = document.querySelector('.exposure-film');
+  const drawExposure = exposure && exposureRenderer(exposure, trial.film, hues);
   const ink = color('scope'), grid = color('grid'), dark = color('chamber');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = base.duration;
@@ -63,6 +67,7 @@ export function animate(trial, base) {
     const phase = Math.min(elapsed, duration);
     const sample = (trial.film.length - 1) * phase / duration;
     const i = Math.min(trial.film.length - 2, Math.floor(sample)), frac = sample - i;
+    drawExposure?.(i, frac);
 
     function line(x, y, u, v, stroke, width = 1) {
       ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.beginPath();
@@ -169,6 +174,7 @@ export function animate(trial, base) {
   function preferenceChanged() { if (reduce.matches) { paused = true; sync(); } }
   const size = new ResizeObserver(paint);
   size.observe(canvas);
+  if (exposure) size.observe(exposure);
   const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync(); });
   visibility.observe(canvas);
   reduce.addEventListener('change', preferenceChanged);

@@ -26,16 +26,16 @@ async function openWorld(id){
 function newBtn(){return '<button class="textbtn" id="newWorld">Try a different world ↗</button>'}
 function newHook(){$('#newWorld').onclick=guarded(async()=>{if(phase==='lab'&&log.length&&!confirm('Start another world and discard your notebook?'))return;await openWorld('new');render()})}
 function used(){return log.map(r=>r.action)}
-let lastWorld;
 function labHeader(){
-  const entering=lastWorld!==base.world;
-  lastWorld=base.world;
-  return `<section class="world-header${entering?' entering':''}">
+  return `<section class="world-header">
     <div><h1>Experiment chamber</h1>
-      <p>Change one release condition to uncover the law governing three probes.</p></div>
-    <div class="world-selector"><div class="planet" aria-hidden="true"></div><div>
-      <div class="world-id"><span>World</span> ${base.world}</div>${newBtn()}
-    </div></div></section>`;
+      <p>Change one release condition to uncover the law governing three probes.</p>
+      <div class="world-selector"><span class="world-id">World ${base.world}</span>${newBtn()}</div>
+    </div>
+    <figure class="exposure">
+      <canvas class="exposure-film" role="img" aria-label="Time exposure of the selected run. Each triangle joins probes A, B and C at one instant. Time advances to the right."></canvas>
+      <figcaption><span>Time exposure</span><span>0 — ${base.duration.toFixed(2)} s</span></figcaption>
+    </figure></section>`;
 }
 function meter(n){return `<div class="budget"><span>Experiments used</span><span class="meter" aria-hidden="true">${Array.from({length:base.budget},(_,i)=>`<i class="${i<n?'used':''}"></i>`).join('')}</span><span class="value">${n}/${base.budget}</span></div>`}
 function journal(){
