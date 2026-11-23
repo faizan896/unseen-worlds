@@ -258,3 +258,16 @@ footer .textbtn {font-size:12px}
   nav {order:3;width:100%;margin:4px 0}
   .guide {margin-left:auto}
 }
+@media (orientation:landscape) and (max-height:480px) {
+  .film-views {display:flex}
+  .exposure {border-top:0;border-left:1px solid var(--border)}
+  .chamber figcaption,.scope-readout {flex-wrap:wrap;gap:4px 8px}
+  .chamber figcaption {padding:6px 10px}
+  .scope {padding:6px 10px 0}
+  .scope-readout {justify-content:flex-start}
+  .stage,.exposure-film {height:clamp(80px,38vh,175px)}
+  .stage {margin:4px 0}
+  .legend {padding:4px 0;gap:4px 10px}
+  .exposure p {margin:4px 10px;font-size:12px}
+  .time-direction {margin:2px 10px 6px}
+}
