@@ -47,7 +47,8 @@ export function animate(trial, base) {
   const xs = positions.map(([x]) => x), ys = positions.map(([, y]) => y);
   const left = Math.min(...xs), right = Math.max(...xs);
   const top = Math.min(...ys), bottom = Math.max(...ys);
-  let active = true, paused = reduce.matches, visible = true, elapsed = 0, last = null, frame = 0;
+  const visibleCanvases = new Set();
+  let active = true, paused = reduce.matches, elapsed = 0, last = null, frame = 0;
 
   function paint() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -167,7 +168,7 @@ export function animate(trial, base) {
     last = null;
     play.textContent = paused ? '▶ Play' : 'Ⅱ Pause';
     paint();
-    if (!paused && visible && !document.hidden) frame = requestAnimationFrame(tick);
+    if (!paused && visibleCanvases.size && !document.hidden) frame = requestAnimationFrame(tick);
   }
   play.onclick = () => { paused = !paused; sync(); };
   scrub.oninput = () => { paused = true; elapsed = Number(scrub.value); sync(); };
@@ -175,8 +176,15 @@ export function animate(trial, base) {
   const size = new ResizeObserver(paint);
   size.observe(canvas);
   if (exposure) size.observe(exposure);
-  const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync(); });
+  const visibility = new IntersectionObserver(entries => {
+    for (const {target, isIntersecting} of entries) {
+      if (isIntersecting) visibleCanvases.add(target);
+      else visibleCanvases.delete(target);
+    }
+    sync();
+  });
   visibility.observe(canvas);
+  if (exposure) visibility.observe(exposure);
   reduce.addEventListener('change', preferenceChanged);
   document.addEventListener('visibilitychange', sync);
   cleanup = () => {
