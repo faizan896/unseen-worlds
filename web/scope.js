@@ -37,9 +37,10 @@ export function animate(trial, base) {
   const style = getComputedStyle(canvas);
   const color = name => style.getPropertyValue('--' + name).trim();
   const hues = ['a', 'b', 'c'].map(color);
+  const strokes = ['a-ink', 'b-ink', 'c-ink'].map(color);
   const exposure = document.querySelector('.exposure-film');
-  const drawExposure = exposure && exposureRenderer(exposure, trial.film, hues);
-  const ink = color('scope'), grid = color('grid'), dark = color('chamber');
+  const drawExposure = exposure && exposureRenderer(exposure, trial.film, hues, strokes);
+  const ink = color('scope'), grid = color('grid'), paper = color('chamber');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = base.duration;
   // Keep the opening in view when comparing a trial, using the same units on both axes.
@@ -106,6 +107,7 @@ export function animate(trial, base) {
     if (trial !== base) track(base.film, 0, base.film.length-1, ink, 1, [5, 5]);
     for (let j = 0; j < hues.length; j++) {
       const hue = hues[j];
+      const stroke = strokes[j];
       const [a, b] = trial.film[i][j], [c, d] = trial.film[i+1][j];
       const px = a + (c-a)*frac, py = b + (d-b)*frac;
       const x = X(px), y = Y(py);
@@ -114,41 +116,40 @@ export function animate(trial, base) {
       ctx.save();
       if (j === 0 && paused) {
         ctx.globalAlpha = .4; ctx.setLineDash([2, 5]);
-        line(rulerX, y, x, y, hue);
-        line(x, y, x, rulerY, hue);
+        line(rulerX, y, x, y, stroke);
+        line(x, y, x, rulerY, stroke);
         ctx.setLineDash([]);
       }
       ctx.globalAlpha = .55;
-      track(trial.film, j, trial.film.length-1, hue, 1.2, [2, 4]);
-      line(X(sx)-4, Y(sy), X(sx)+4, Y(sy), hue);
-      line(X(sx), Y(sy)-4, X(sx), Y(sy)+4, hue);
-      ring(X(ex), Y(ey), 5, hue);
+      track(trial.film, j, trial.film.length-1, stroke, 1.2, [2, 4]);
+      line(X(sx)-4, Y(sy), X(sx)+4, Y(sy), stroke);
+      line(X(sx), Y(sy)-4, X(sx), Y(sy)+4, stroke);
+      ring(X(ex), Y(ey), 5, stroke);
       if (j === 0 && phase < .45 && !reduce.matches) {
         const release = phase / .45;
         ctx.globalAlpha = .65 * (1 - release);
         ring(X(sx), Y(sy), 6 + 34*release, hue);
       }
       ctx.globalAlpha = 1;
-      ctx.shadowColor = hue; ctx.shadowBlur = j === 0 ? 6 : 0;
-      track(trial.film, j, i, hue, 2, [], [x, y]);
+      track(trial.film, j, i, stroke, 2, [], [x, y]);
       const r = w < 440 ? 4.5 : 6;
       ctx.translate(x, y);
       ctx.fillStyle = hue; ctx.beginPath();
       if (j === 0) ctx.arc(0, 0, r, 0, Math.PI*2);
       else if (j === 1) { ctx.moveTo(0,-r); ctx.lineTo(r,0); ctx.lineTo(0,r); ctx.lineTo(-r,0); ctx.closePath(); }
       else ctx.rect(-r*.8, -r*.8, r*1.6, r*1.6);
-      ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fill(); ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke();
       if (j === 0) {
-        ring(0, 0, r+4, hue);
+        ring(0, 0, r+4, stroke);
         if (elapsed >= duration) {
           const fade = Math.min(1, (elapsed-duration)/.55);
           ctx.globalAlpha = 1-fade; ring(0, 0, r+4+fade*22, hue); ctx.globalAlpha = 1;
         }
       }
       ctx.font = '600 11px ui-monospace, monospace';
-      ctx.lineWidth = 3; ctx.strokeStyle = dark;
+      ctx.lineWidth = 3; ctx.strokeStyle = paper;
       ctx.strokeText('ABC'[j], r+6, -r-4);
-      ctx.fillStyle = hue; ctx.fillText('ABC'[j], r+6, -r-4);
+      ctx.fillStyle = stroke; ctx.fillText('ABC'[j], r+6, -r-4);
       ctx.restore();
     }
     scrub.value = phase.toFixed(2);

@@ -1,6 +1,6 @@
 // Each cross-section joins the three simultaneous probe positions. Project time
 // along a third axis so the whole two-second film is visible in one drawing.
-export function exposureRenderer(canvas, film, colors) {
+export function exposureRenderer(canvas, film, colors, strokes) {
   const context = canvas.getContext('2d');
   const sections = film.map((frame, i) => {
     const time = i / (film.length - 1);
@@ -41,12 +41,12 @@ export function exposureRenderer(canvas, film, colors) {
     context.translate(-(left + right) / 2, -(top + bottom) / 2);
 
     context.lineWidth = .75 / scale;
-    context.strokeStyle = colors[1];
-    context.globalAlpha = .45;
+    context.strokeStyle = strokes[2];
+    context.globalAlpha = .48;
     context.stroke(ribs);
     context.globalAlpha = .9;
     rails.forEach((rail, index) => {
-      context.strokeStyle = colors[index];
+      context.strokeStyle = strokes[index];
       context.stroke(rail);
     });
 
@@ -55,8 +55,8 @@ export function exposureRenderer(canvas, film, colors) {
       return [x + (nextX - x) * fraction, y + (nextY - y) * fraction];
     });
     const face = path(slice, true);
-    context.fillStyle = colors[0];
-    context.globalAlpha = .16;
+    context.fillStyle = colors[1];
+    context.globalAlpha = .65;
     context.fill(face);
     context.globalAlpha = 1;
     context.strokeStyle = colors[2];
@@ -67,6 +67,9 @@ export function exposureRenderer(canvas, film, colors) {
       context.arc(x, y, 2.8 / scale, 0, 2 * Math.PI);
       context.fillStyle = colors[index];
       context.fill();
+      context.lineWidth = 1 / scale;
+      context.strokeStyle = strokes[index];
+      context.stroke();
     });
   };
 }
