@@ -8,18 +8,26 @@ export function field(trial) {
   return [(x - p.x - 2 * p.vx) / 2, (y - p.y - 2 * p.vy) / 2];
 }
 
-export function scopeMarkup(title) {
-  return `<figure class="chamber">
-    <figcaption><span>Probe trajectories</span><span class="figure-state">${title}</span></figcaption>
+export function scopeMarkup(title, {showExposure = false} = {}) {
+  return `<div class="chamber">
+    <div class="film-views"><figure class="trajectories">
+      <figcaption><span>Probe trajectories</span><span class="figure-state">${title}</span></figcaption>
     <div class="scope">
       <div class="scope-readout"><span class="telemetry"><b>A</b><span>Position</span> <span id="position"></span></span><span class="axes">X → east &nbsp; Y ↓ south</span></div>
-      <canvas class="stage" aria-label="Two-second motion of probe A and references B and C"></canvas>
+      <canvas class="stage" role="img" aria-label="Two-second motion of probe A and references B and C"></canvas>
       <div class="legend"><span>Probe A</span><span>Reference B</span><span>Reference C</span></div>
+    </div></figure>
+    ${showExposure ? `<figure class="exposure">
+      <figcaption>Time exposure</figcaption>
+      <p id="exposure-note">Each triangle joins the three probes at one instant.</p>
+      <canvas class="exposure-film" role="img" aria-label="Time exposure of the selected run" aria-describedby="exposure-note"></canvas>
+      <div class="time-direction" aria-hidden="true">Time <span></span>→</div>
+    </figure>` : ''}
     </div>
     <div class="scopeFoot"><button class="iconbtn" id="play">Pause</button>
       <input id="scrub" type="range" min="0" max="2" value="0" step=".01" aria-label="Simulation time">
       <output id="time">0.00 / 2 s</output>
-    </div></figure>`;
+    </div></div>`;
 }
 
 let cleanup;

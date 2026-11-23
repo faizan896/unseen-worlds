@@ -30,12 +30,9 @@ function labHeader(){
   return `<section class="world-header">
     <div><h1>Experiment chamber</h1>
       <p>Change one release condition to uncover the law governing three probes.</p>
-      <div class="world-selector"><span class="world-id">World ${base.world}</span>${newBtn()}</div>
     </div>
-    <figure class="exposure">
-      <canvas class="exposure-film" role="img" aria-label="Time exposure of the selected run. Each triangle joins probes A, B and C at one instant. Time advances to the right."></canvas>
-      <figcaption><span>Time exposure</span><span>0 — ${base.duration.toFixed(2)} s</span></figcaption>
-    </figure></section>`;
+    <div class="world-selector"><span class="world-id">World ${base.world}</span>${newBtn()}</div>
+  </section>`;
 }
 function meter(n){return `<div class="budget"><span>Experiments used</span><span class="meter" aria-hidden="true">${Array.from({length:base.budget},(_,i)=>`<i class="${i<n?'used':''}"></i>`).join('')}</span><span class="value">${n}/${base.budget}</span></div>`}
 function journal(){
@@ -50,11 +47,15 @@ function lab(){
   const trial=showing?log[showing-1]:base, spent=log.length, end=spent===base.budget;
   const avail=base.actions.map((a,i)=>[a,i]).filter(([,i])=>!used().includes(i));
   app.innerHTML=labHeader()+
-    `<div class="workbench instrument">${scopeMarkup(showing?'Trial '+num(showing):'Opening scene')}
-    <aside class="controls intervention"><h2>Intervention</h2><p class="sub">Modify probe A. Probes B and C serve as references.</p>
-    <label class="ctrlLabel" for="action">Starting condition</label><select id="action" ${end?'disabled':''}>${avail.map(([[l],i])=>`<option value="${i}">${l}</option>`).join('')}</select>
-    <div class="actionRead" id="actionRead"></div><button class="solid full" id="run" ${end?'disabled':''}>${end?'No tests remaining':'Run experiment'}<span aria-hidden="true">→</span></button>
-    ${meter(spent)}<div class="forecastLink"><button class="textbtn" id="predict">Make forecasts →</button></div></aside></div>
+    `${scopeMarkup(showing?'Trial '+num(showing):'Opening scene', {showExposure:true})}
+    <section class="intervention" aria-labelledby="intervention-title">
+      <div><h2 id="intervention-title">Intervention</h2>${meter(spent)}</div>
+      <div><label class="ctrlLabel" for="action">Probe A · Starting condition</label>
+        <select id="action" ${end?'disabled':''}>${avail.map(([[l],i])=>`<option value="${i}">${l}</option>`).join('')}</select></div>
+      <div class="actionRead" id="actionRead"></div>
+      <div class="intervention-actions"><button class="solid" id="run" ${end?'disabled':''}>${end?'No tests remaining':'Run experiment'}</button>
+        <button class="textbtn" id="predict">Make forecasts →</button></div>
+    </section>
     <div class="workbench notebook">${journal()}${apparatus(trial)}</div>`;
   const read=()=>{
     const [,key,value]=base.actions[Number($('#action').value)];
