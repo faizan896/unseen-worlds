@@ -1,6 +1,6 @@
 import {fmt} from './scope.js';
 const labels={passive:'Passive observation',random:'Random',learned:'Trained chooser',gain:'Information gain'};
-const palette={passive:'var(--muted)',random:'var(--blue)',learned:'var(--accent)',gain:'var(--primary-action)'};
+const palette={passive:'var(--muted)',random:'var(--b-ink)',learned:'var(--accent)',gain:'var(--forest)'};
 let split='test',group='All';
 export function benchmark(data,replay){
   const {n,curves,at_three}=data.splits[split][group], names=Object.keys(labels), budgets=curves.passive.map((_,i)=>i);
@@ -17,7 +17,7 @@ export function benchmark(data,replay){
   <text x="295" y="236" text-anchor="middle">Experiments used</text><text x="49" y="18">Mean endpoint error (units)</text></svg>`;
   const opts=vals=>vals.map(([v,t],i)=>`<option value="${v}" ${(v===split||v===group)?'selected':''}>${t}</option>`).join('');
   const solvedAt=curves.learned.findIndex(v=>v===0);
-  document.querySelector('#app').innerHTML=`<section class="hero"><div><div class="eyebrow">Benchmark</div><h1>The cost of knowing.</h1></div><div class="intro"><p>${solvedAt<0?'The chooser still had forecast error at the final budget.':`The trained chooser reached zero forecast error after ${solvedAt} experiments.`} Random testing still averaged ${fmt(curves.random.at(-1),2)} units of error after ${data.budget}.</p></div></section>
+  document.querySelector('#app').innerHTML=`<section class="hero"><div><h1>Policy benchmark</h1></div><div class="intro"><p>${solvedAt<0?'The chooser still had forecast error at the final budget.':`The trained chooser reached zero forecast error after ${solvedAt} experiments.`} Random testing still averaged ${fmt(curves.random.at(-1),2)} units of error after ${data.budget}.</p></div></section>
   <div class="benchgrid"><section class="panel card"><div class="space wrap"><h2>Forecast error</h2><span class="pill">${n} configurations</span></div>
   ${chart}<div class="plotlegend">${legend}<b>◇ Frozen triple</b></div><p class="under">The diamond is a three-test result, not a curve. Dashes mark information gain where it overlaps the chooser.</p>
   <div class="tablewrap"><table><caption class="tiny">Mean distance in chamber units · lower is better</caption><thead><tr><th>Strategy / budget</th>${budgets.map(i=>'<th>'+i+'</th>').join('')}</tr></thead><tbody>${names.map(s=>`<tr><th>${labels[s]}</th>${curves[s].map(v=>'<td>'+v.toFixed(2)+'</td>').join('')}</tr>`).join('')}</tbody></table></div></section>
@@ -25,7 +25,7 @@ export function benchmark(data,replay){
   <label class="ctrlLabel" for="family">World family</label><select id="family">${opts(Object.keys(data.splits[split]).map(x=>[x,x]))}</select>
   <p class="note">${n} worlds × 4 forecasts each. Random curves average ${data.seeds} fixed seeds per world before averaging worlds.</p>
   <button class="solid full" id="branch">Replay fixed vs. adaptive →</button></aside></div>
-  <section class="card block"><div class="kicker">Matched budget · ${n} worlds</div><h2>Three tests, chosen when?</h2>
+  <section class="card block"><div class="kicker">Matched budget · ${n} worlds</div><h2>Performance after three tests</h2>
   <p>The fixed policy commits to its family’s training-selected triple before test one. Only the chooser and information-gain policy use the outcomes to design the next test.</p>
   <div class="tablewrap"><table><thead><tr><th>Strategy</th><th>Mean endpoint error</th><th>One rule / runs</th></tr></thead><tbody>${['fixed','learned','random','gain'].map(s=>`<tr><th>${labels[s]||'Frozen triple'}</th><td>${fmt(at_three[s].error,6)}</td><td>${at_three[s].unique} / ${at_three[s].runs}</td></tr>`).join('')}</tbody></table></div>
   <p class="under">Random counts world–seed pairs: ${at_three.random.unique/data.seeds} of ${n} worlds identified per seed on average. Other policies run once per world.</p>
