@@ -57,3 +57,7 @@ The evaluator starts from **all** family/strength possibilities, keeps those con
 | Change policies, score or replay export | [lab/evaluate.py](lab/evaluate.py), [scripts/benchmark.py](scripts/benchmark.py), and [server.py](server.py). |
 
 The browser replays recorded policy decisions; the server reconstructs each film with the very same simulator. Tests compare every saved step to fresh inference and its displayed final frame. Human forecasts are blind in the ordinary play flow; this is a transparent local research toy, not a tamper-resistant exam.
+
+## License
+
+The Unseen Worlds source code and [trained model weights](data/chooser.json) are licensed under the [MIT License](LICENSE). The bundled Instrument Sans font is licensed under the [SIL Open Font License 1.1](web/assets/instrument-sans-license.txt).
